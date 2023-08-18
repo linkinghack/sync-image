@@ -1,0 +1,14 @@
+[
+    "docker.io/alpine:3.16.0",
+    "docker.io/pingcap/tikv:v6.5.0",
+    "docker.io/pingcap/pd:v6.5.0",
+    "docker.io/pingcap/tidb:v6.5.0",
+    "docker.io/pingcap/tidb-operator:v1.4.4",
+    "docker.io/pingcap/tidb-backup-manager:v1.4.4",
+    "docker.io/pingcap/tidb-dashboard:v6.5.2",
+    "docker.io/prom/prometheus:v2.27.1",
+    "docker.io/grafana/grafana:7.5.11",
+    "docker.io/pingcap/tidb-monitor-initializer:v6.5.0",
+    "docker.io/pingcap/tidb-monitor-reloader:v1.0.1",
+    "quay.io/prometheus-operator/prometheus-config-reloader:v0.49.0"
+]

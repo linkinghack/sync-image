@@ -1,0 +1,17 @@
+[
+    "docker.io/linkinghack/examples-bookinfo-reviews-v1:230710",
+    "docker.io/linkinghack/examples-bookinfo-reviews-v2:230710",
+    "docker.io/linkinghack/examples-bookinfo-reviews-v3:230710",
+    "docker.io/linkinghack/examples-bookinfo-productpage-v-flooding:230710",
+    "docker.io/linkinghack/examples-bookinfo-productpage-v1:230710",
+    "docker.io/linkinghack/examples-bookinfo-ratings-v-unavailable:230710",
+    "docker.io/linkinghack/examples-bookinfo-ratings-v-unhealthy:230710",
+    "docker.io/linkinghack/examples-bookinfo-ratings-v-faulty:230710",
+    "docker.io/linkinghack/examples-bookinfo-ratings-v-delayed:230710",
+    "docker.io/linkinghack/examples-bookinfo-ratings-v1:230710",
+    "docker.io/linkinghack/examples-bookinfo-ratings-v2:230710",
+    "docker.io/linkinghack/examples-bookinfo-mongodb:230710",
+    "docker.io/linkinghack/examples-bookinfo-mysqldb:230710",
+    "docker.io/linkinghack/examples-bookinfo-details-v1:230710",
+    "docker.io/linkinghack/examples-bookinfo-details-v2:230710"
+]

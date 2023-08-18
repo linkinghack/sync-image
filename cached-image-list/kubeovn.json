@@ -1,0 +1,6 @@
+[
+  "docker.io/kubeovn/kube-ovn:v1.11.5",
+  "docker.io/kubeovn/kube-ovn-dpdk:v1.11.5",
+  "docker.io/kubeovn/kube-ovn:v1.11.5-dpdk"
+
+]

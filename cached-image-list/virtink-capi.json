@@ -1,0 +1,6 @@
+[
+    "docker.io/smartxworks/capch-controller:v0.7.0",
+    "docker.io/smartxworks/virt-controller:v0.15.0",
+    "docker.io/smartxworks/virt-prerunner:v0.15.0",
+    "docker.io/smartxworks/virt-daemon:v0.15.0"
+]

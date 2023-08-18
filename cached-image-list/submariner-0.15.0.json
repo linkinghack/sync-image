@@ -1,0 +1,11 @@
+[
+    "quay.io/submariner/submariner-operator:0.15.0",
+    "quay.io/submariner/submariner-gateway:0.15.0",
+    "quay.io/submariner/submariner-route-agent:0.15.0",
+    "quay.io/submariner/submariner-networkplugin-syncer:0.15.0",
+    "quay.io/submariner/submariner-globalnet:0.15.0",
+    "quay.io/submariner/lighthouse-agent:0.15.0",
+    "quay.io/submariner/lighthouse-coredns:0.15.0",
+    "quay.io/submariner/submariner-route-agent:0.15.0",
+    "quay.io/submariner/nettest:0.15.0"
+]

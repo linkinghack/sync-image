@@ -1,0 +1,5 @@
+[
+    "quay.io/kubevirt/virt-operator:v0.59.0",
+    "quay.io/kubevirt/virt-api:v0.59.0",
+    "quey.io/kubevirt/virt-controller:v0.59.0"
+]

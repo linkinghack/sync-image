@@ -1,0 +1,12 @@
+[
+    "quay.io/cilium/cilium:v1.13.0",
+    "quay.io/cilium/operator:v1.13.0",
+    "quay.io/cilium/operator-generic:v1.13.0",
+    "quay.io/cilium/hubble-relay:v1.13.0",
+    "quay.io/cilium/hubble-ui-backend:v0.10.0",
+    "quay.io/cilium/hubble-ui:v0.10.0",
+    "quay.io/cilium/startup-script:d69851597ea019af980891a4628fb36b7880ec26",
+    "quay.io/cilium/clustermesh-apiserver:v1.13.0",
+    "quay.io/coreos/etcd:v3.5.4",
+    "quay.io/cilium/certgen:v0.1.8"
+]

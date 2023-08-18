@@ -1,0 +1,6 @@
+[
+    "docker.io/apache/apisix:3.4.0-debian",
+    "docker.io/apache/apisix-dashboard:3.0.0-alpine",
+    "docker.io/library/busybox:1.28",
+    "docker.io/bitnami/etcd:3.5.7-debian-11-r14"
+]
