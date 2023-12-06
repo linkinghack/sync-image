@@ -20,8 +20,9 @@ set -xeu
 
 #  command template
 ## for push an image immediately after pull and retag.
-tmpl_immediate_sync = """
+tmpl_immediate_sync_mutli_arch = """
 ${shell_preconfig}
+
 ${container_cli} pull --platform=linux/arm64 ${image_repo}/${image_name}
 ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-arm64
 ${container_cli} push ${private_repo}/${image_name}-arm64
@@ -35,18 +36,41 @@ ${container_cli} manifest create ${private_repo}/${image_name} ${private_repo}/$
 ${container_cli} manifest push ${private_repo}/${image_name}
 """
 
+tmpl_immediate_sync = """
+${shell_preconfig}
+
+${container_cli} pull  ${image_repo}/${image_name}
+${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}
+${container_cli} push ${private_repo}/${image_name}
+
+"""
+
 ## for temporarily cache image in local repo
 tmpl_cache_locally = """
+MULTI_ARCH="${MULTI_ARCH}"
+if [ $MULT_ARCH == "true" ]; then
+    ${container_cli} pull --platform=linux/arm64 ${image_repo}/${image_name}
+    ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-arm64
+    ${container_cli} pull --platform=linux/amd64 ${image_repo}/${image_name}
+    ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-amd64
+else
+    ${container_cli} pull ${image_repo}/${image_name}
+fi
 
 """
 
 
-def sync_image(img_list: List[str], target_repo: str, container_cli: str):
+def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool):
     # check current OS type and set preconfig script
     shell_preconfig = bash_preconfig
-    if (platform.system() == "Windows"):
+    if platform.system() == "Windows" :
         shell_preconfig = powershell_preconfig
-    script = tmpl_immediate_sync.replace("${shell_preconfig}", shell_preconfig)
+
+    script = ""
+    if multi_arch:
+        script = tmpl_immediate_sync_mutli_arch.replace("${shell_preconfig}", shell_preconfig)
+    else:
+        script = tmpl_immediate_sync.replace("${shell_preconfig}", shell_preconfig)
 
     for img in img_list:
         #  split repo and name
@@ -65,17 +89,16 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str):
         # tmpSh.write(script)
         # tmpSh.close()
         # exec shell
-        match platform.system():
-            case "Windows": 
-                tmpSh = open('tmp.ps1', 'w')
-                tmpSh.write(script)
-                tmpSh.close()
-                subprocess.call(["powershell", "./tmp.ps1"])
-            case _ :
-                tmpSh = open('tmp.sh', 'w')
-                tmpSh.write(script)
-                tmpSh.close()
-                subprocess.call(["bash", "tmp.sh"])
+        if platform.system() == "Windows": 
+            tmpSh = open('tmp.ps1', 'w')
+            tmpSh.write(script)
+            tmpSh.close()
+            subprocess.call(["powershell", "./tmp.ps1"])
+        else:
+            tmpSh = open('tmp.sh', 'w')
+            tmpSh.write(script)
+            tmpSh.close()
+            subprocess.call(["bash", "tmp.sh"])
 
 # def local_cache_images(img_list: List[str]):
 #     for img in img_list:
@@ -84,7 +107,8 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str):
 arg_parser = argparse.ArgumentParser('sync-image')
 arg_parser.add_argument('-r', '--target-repo', required=True, type=str, dest='repo')
 arg_parser.add_argument('-l', '--image-list', default='list.json', dest='imagelist', type=str)
-arg_parser.add_argument('-c' '--container-cli', default='docker', dest='container_cli', choices=['docker', 'podman'], type=str) # podman or docker
+arg_parser.add_argument('-c', '--container-cli', default='docker', dest='container_cli', choices=['docker', 'podman'], type=str) # podman or docker
+arg_parser.add_argument('-m', '--multi-arch', default=False, type=bool, dest="multi_arch")
 
 def main():
     target_repo = "docker.io"
@@ -100,7 +124,7 @@ def main():
     lf = open(list_file, 'r')
     image_list = json.load(lf)
     print(f"image list: {image_list}")
-    sync_image(image_list, target_repo, parsed.container_cli)
+    sync_image(image_list, target_repo, parsed.container_cli, parsed.multi_arch)
 
 if __name__ == "__main__":
     main()
