@@ -66,13 +66,12 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
     if platform.system() == "Windows" :
         shell_preconfig = powershell_preconfig
 
-    script = ""
-    if multi_arch:
-        script = tmpl_immediate_sync_mutli_arch.replace("${shell_preconfig}", shell_preconfig)
-    else:
-        script = tmpl_immediate_sync.replace("${shell_preconfig}", shell_preconfig)
-
     for img in img_list:
+        script = ""
+        if multi_arch:
+            script = tmpl_immediate_sync_mutli_arch.replace("${shell_preconfig}", shell_preconfig)
+        else:
+            script = tmpl_immediate_sync.replace("${shell_preconfig}", shell_preconfig)
         #  split repo and name
         repo_end_idx = img.find('/')
         print('image=', img, 'repo_end_idx=', repo_end_idx)
@@ -85,10 +84,7 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
         script = script.replace("${image_name}", image_name)
         script = script.replace("${private_repo}", target_repo)
         script = script.replace("${container_cli}", container_cli)
-        # tmpSh = open('tmp.sh', 'w')
-        # tmpSh.write(script)
-        # tmpSh.close()
-        # exec shell
+
         if platform.system() == "Windows": 
             tmpSh = open('tmp.ps1', 'w')
             tmpSh.write(script)
@@ -99,7 +95,7 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
             tmpSh.write(script)
             tmpSh.close()
             subprocess.call(["bash", "tmp.sh"])
-
+        
 # def local_cache_images(img_list: List[str]):
 #     for img in img_list:
         
