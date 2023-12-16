@@ -1,4 +1,12 @@
 [
-    "docker.io/istio/pilot:1.18.0",
-    "docker.io/istio/proxyv2:1.18.0"
+    "docker.io/istio/proxyv2:1.16.0",
+    "docker.io/istio/pilot:1.16.0",
+    "docker.io/istio/base:1.16.0",
+    "docker.io/istio/operator:1.16.0",
+    "docker.io/istio/istioctl:1.16.0",
+    "docker.io/istio/distroless:1.16.0",
+    "docker.io/istio/app:1.16.0",
+    "docker.io/istio/ext-authz:1.16.0",
+    "docker.io/istio/ztunnel:1.16.0"
 ]
+
