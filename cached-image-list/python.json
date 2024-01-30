@@ -1,0 +1,13 @@
+[
+    "docker.io/library/python:3.8.18-bullseye",
+    "docker.io/library/python:3.8.18-slim-bullseye",
+    "docker.io/library/python:3.9.18-bullseye",
+    "docker.io/library/python:3.9.18-slim-bullseye",
+    "docker.io/library/python:3.10.13-bullseye",
+    "docker.io/library/python:3.10.13-slim-bullseye",
+    "docker.io/library/python:3.11.7-bullseye",
+    "docker.io/library/python:3.11.7-slim-bullseye",
+    "docker.io/library/python:3.12.1-bullseye",
+    "docker.io/library/python:3.12.1-slim-bullseye"
+]
+

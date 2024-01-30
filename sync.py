@@ -19,6 +19,18 @@ set -xeu
 
 """
 
+linux_create_manifest = """
+${container_cli} manifest rm ${private_repo}/${image_name} || echo "manifest does not exists, now create it"
+${container_cli} manifest create ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
+${container_cli} manifest push ${private_repo}/${image_name}
+"""
+
+windows_create_manifest = """
+${container_cli} manifest rm ${private_repo}/${image_name}
+${container_cli} manifest create ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
+${container_cli} manifest push ${private_repo}/${image_name}
+"""
+
 #  command template
 ## for push an image immediately after pull and retag.
 tmpl_immediate_sync_mutli_arch = """
@@ -32,9 +44,7 @@ ${container_cli} pull --platform=linux/amd64 ${image_repo}/${image_name}
 ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-amd64
 ${container_cli} push ${private_repo}/${image_name}-amd64
 
-${container_cli} manifest rm ${private_repo}/${image_name} || echo "manifest does not exists, now create it"
-${container_cli} manifest create ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
-${container_cli} manifest push ${private_repo}/${image_name}
+${create_manifest}
 """
 
 tmpl_immediate_sync = """
@@ -63,8 +73,10 @@ fi
 def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool):
     # check current OS type and set preconfig script
     shell_preconfig = bash_preconfig
+    create_manifest = linux_create_manifest
     if platform.system() == "Windows" :
         shell_preconfig = powershell_preconfig
+        create_manifest = windows_create_manifest
 
     for img in img_list:
         script = ""
@@ -72,6 +84,7 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
             script = tmpl_immediate_sync_mutli_arch.replace("${shell_preconfig}", shell_preconfig)
         else:
             script = tmpl_immediate_sync.replace("${shell_preconfig}", shell_preconfig)
+        script = script.replace("${create_manifest}", create_manifest)
         execute_template_script(img, script, target_repo, container_cli)
 
 def cache_images_locally(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool) -> List[str]:
@@ -128,7 +141,7 @@ arg_parser = argparse.ArgumentParser('sync-image')
 arg_parser.add_argument('-r', '--target-repo', required=True, type=str, dest='repo')
 arg_parser.add_argument('-l', '--image-list', default='list.json', dest='image_list', type=str)
 arg_parser.add_argument('-c', '--container-cli', default='docker', dest='container_cli', choices=['docker', 'podman'], type=str) # podman or docker
-arg_parser.add_argument('-m', '--multi-arch', default=False, type=bool, dest="multi_arch")
+arg_parser.add_argument('-m', '--multi-arch', default=False, type=bool, dest="multi_arch", choices=[True, False])
 arg_parser.add_argument('-t', '--cache-only', default=False, type=bool, dest="cache_only")
 
 def main():
