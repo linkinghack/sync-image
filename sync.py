@@ -142,7 +142,7 @@ arg_parser.add_argument('-r', '--target-repo', required=True, type=str, dest='re
 arg_parser.add_argument('-l', '--image-list', default='list.json', dest='image_list', type=str)
 arg_parser.add_argument('-c', '--container-cli', default='docker', dest='container_cli', choices=['docker', 'podman'], type=str) # podman or docker
 arg_parser.add_argument('-m', '--multi-arch', default=False, type=bool, dest="multi_arch", choices=[True, False])
-arg_parser.add_argument('-t', '--cache-only', default=False, type=bool, dest="cache_only")
+arg_parser.add_argument('-t', '--cache-only', default=False, type=bool, dest="cache_only", choices=[True, False])
 
 def main():
     parsed = arg_parser.parse_args()

@@ -1,0 +1,5 @@
+[
+   "docker.io/linkinghack/devenv-java:bullseye-2308-1",
+   "docker.io/linkinghack/devenv-golang:bullseye-2308-1",
+   "docker.io/linkinghack/devenv-nodejs:bullseye-2308-1"
+]

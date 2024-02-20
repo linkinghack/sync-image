@@ -1,0 +1,4 @@
+[
+  "pingcap/tidb-operator:v1.5.0",
+  "pingcap/tidb-backup-manager:v1.5.0"
+]
