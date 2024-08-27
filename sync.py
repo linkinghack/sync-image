@@ -58,13 +58,14 @@ ${container_cli} push ${private_repo}/${image_name}
 ## for temporarily cache image in local repo
 tmpl_cache_locally = """
 MULTI_ARCH="${MULTI_ARCH}"
+TARGET_ARCH="${TARGET_ARCH}"
 if [ $MULT_ARCH == "true" ]; then
     ${container_cli} pull --platform=linux/arm64 ${image_repo}/${image_name}
     ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-arm64
     ${container_cli} pull --platform=linux/amd64 ${image_repo}/${image_name}
     ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-amd64
 else
-    ${container_cli} pull ${image_repo}/${image_name}
+    ${container_cli} pull --platform=$TARGET_ARCH ${image_repo}/${image_name}
     ${container_cli} tag ${private_repo}/${image_name}
 fi
 """
@@ -87,7 +88,7 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
         script = script.replace("${create_manifest}", create_manifest)
         execute_template_script(img, script, target_repo, container_cli)
 
-def cache_images_locally(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool) -> List[str]:
+def cache_images_locally(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool, target_arch) -> List[str]:
     # check current OS type and set preconfig script
     shell_preconfig = bash_preconfig
     if platform.system() == "Windows" :
@@ -95,6 +96,12 @@ def cache_images_locally(img_list: List[str], target_repo: str, container_cli: s
 
     tagged_images_list = [str]
     for img in img_list:
+        repo_end_idx = img.find('/')
+        print('image=', img, 'repo_end_idx=', repo_end_idx)
+        image_repo = img[:repo_end_idx]
+        image_name = img[repo_end_idx+1:]
+        private_repo = target_repo
+
         script = ""
         if multi_arch:
             script = tmpl_cache_locally.replace("${MULTI_ARCH}", "true")
@@ -103,6 +110,7 @@ def cache_images_locally(img_list: List[str], target_repo: str, container_cli: s
         else:
             script = tmpl_cache_locally.replace("${MULTI_ARCH}", "false")
             tagged_images_list.append(f"${private_repo}/${image_name}")
+        script = script.replace("${TARGET_ARCH}", target_arch)
         execute_template_script(img, script, target_repo, container_cli)
     return tagged_images_list
 
@@ -135,7 +143,7 @@ def execute_template_script(img: str, script: str, target_repo: str, container_c
 def save_images_list(images: List[str], file_name: str):
     json_data = json.dumps(images, indent=2)
     with open(file_name, 'w') as json_file:
-        json_file.write(jsondata)
+        json_file.write(json_data)
 
 arg_parser = argparse.ArgumentParser('sync-image')
 arg_parser.add_argument('-r', '--target-repo', required=True, type=str, dest='repo')
@@ -143,6 +151,7 @@ arg_parser.add_argument('-l', '--image-list', default='list.json', dest='image_l
 arg_parser.add_argument('-c', '--container-cli', default='docker', dest='container_cli', choices=['docker', 'podman'], type=str) # podman or docker
 arg_parser.add_argument('-m', '--multi-arch', default=False, type=bool, dest="multi_arch", choices=[True, False])
 arg_parser.add_argument('-t', '--cache-only', default=False, type=bool, dest="cache_only", choices=[True, False])
+arg_parser.add_argument('-a', '--target_arch', default='linux/amd64', type=str, dest="target_arch")
 
 def main():
     parsed = arg_parser.parse_args()
@@ -153,7 +162,7 @@ def main():
     image_list = json.load(lf)
     print(f"image list: {image_list}")
     if parsed.cache_only:
-        tagged_images = cache_images_locally(image_list, parsed.repo, parsed.container_cli, parsed.multi_arch)
+        tagged_images = cache_images_locally(image_list, parsed.repo, parsed.container_cli, parsed.multi_arch, parsed.target_arch)
         current_time = datetime().now()
         current_time.strftime("%y%m%d-%H%M%S")
         save_images_list(tagged_images, f"images_cached-${current_time}.json")
