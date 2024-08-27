@@ -66,7 +66,7 @@ if [ $MULT_ARCH == "true" ]; then
     ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-amd64
 else
     ${container_cli} pull --platform=$TARGET_ARCH ${image_repo}/${image_name}
-    ${container_cli} tag ${private_repo}/${image_name}
+    ${container_cli} tag  {image_repo}/${image_name}  ${private_repo}/${image_name}
 fi
 """
 
@@ -163,7 +163,7 @@ def main():
     print(f"image list: {image_list}")
     if parsed.cache_only:
         tagged_images = cache_images_locally(image_list, parsed.repo, parsed.container_cli, parsed.multi_arch, parsed.target_arch)
-        current_time = datetime().now()
+        current_time = datetime.now()
         current_time.strftime("%y%m%d-%H%M%S")
         save_images_list(tagged_images, f"images_cached-${current_time}.json")
     else:
