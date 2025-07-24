@@ -1,0 +1,8 @@
+[
+    "docker.io/linkinghack/cloudide-python:2502-1",
+    "docker.io/linkinghack/cloudide-go:2502-1",
+    "docker.io/linkinghack/cloudide-allinone:2502-1",
+    "docker.io/linkinghack/cloudide-java:2502-1",
+    "docker.io/linkinghack/cloudide-nodejs:2502-1",
+    "docker.io/linkinghack/cloudide-cxx14:2502-1s"
+]
