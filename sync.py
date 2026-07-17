@@ -21,14 +21,14 @@ set -xeu
 
 linux_create_manifest = """
 ${container_cli} manifest rm ${private_repo}/${image_name} || echo "manifest does not exists, now create it"
-${container_cli} manifest create ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
-${container_cli} manifest push ${private_repo}/${image_name}
+${container_cli} manifest create ${insecure_flag} ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
+${container_cli} manifest push ${insecure_flag} ${private_repo}/${image_name}
 """
 
 windows_create_manifest = """
 ${container_cli} manifest rm ${private_repo}/${image_name}
-${container_cli} manifest create ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
-${container_cli} manifest push ${private_repo}/${image_name}
+${container_cli} manifest create ${insecure_flag} ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
+${container_cli} manifest push ${insecure_flag} ${private_repo}/${image_name}
 """
 
 #  command template
@@ -71,7 +71,7 @@ fi
 """
 
 
-def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool):
+def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool, insecure: bool = False):
     # check current OS type and set preconfig script
     shell_preconfig = bash_preconfig
     create_manifest = linux_create_manifest
@@ -79,6 +79,7 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
         shell_preconfig = powershell_preconfig
         create_manifest = windows_create_manifest
 
+    insecure_flag = "--insecure" if insecure else ""
     for img in img_list:
         script = ""
         if multi_arch:
@@ -86,6 +87,7 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
         else:
             script = tmpl_immediate_sync.replace("${shell_preconfig}", shell_preconfig)
         script = script.replace("${create_manifest}", create_manifest)
+        script = script.replace("${insecure_flag}", insecure_flag)
         execute_template_script(img, script, target_repo, container_cli)
 
 def cache_images_locally(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool, target_arch) -> List[str]:
@@ -153,9 +155,12 @@ arg_parser.add_argument('-c', '--container-cli', default='docker', dest='contain
 arg_parser.add_argument('-m', '--multi-arch', default=False, type=bool, dest="multi_arch", choices=[True, False])
 arg_parser.add_argument('-t', '--cache-only', default=False, type=bool, dest="cache_only", choices=[True, False])
 arg_parser.add_argument('-a', '--target_arch', default='linux/amd64', type=str, dest="target_arch")
+arg_parser.add_argument('-k', '--insecure', default=False, action='store_true', dest="insecure",
+                        help='local (target) repo uses http, add --insecure to docker manifest create/push')
 
-def generate_push_script(tagged_images: List[str], target_repo: str, container_cli: str) -> str:
+def generate_push_script(tagged_images: List[str], target_repo: str, container_cli: str, insecure: bool = False) -> str:
     script_lines = []
+    insecure_flag = " --insecure" if insecure else ""
 
     # 先去重
     tagged_images = list(set(tagged_images))
@@ -178,8 +183,8 @@ def generate_push_script(tagged_images: List[str], target_repo: str, container_c
             script_lines.append(f"{container_cli} push {arches['arm64']}")
             script_lines.append(f"{container_cli} push {arches['amd64']}")
             # 创建和推送 manifest
-            script_lines.append(f"{container_cli} manifest create {target_repo}/{base_name} {arches['arm64']} {arches['amd64']}")
-            script_lines.append(f"{container_cli} manifest push {target_repo}/{base_name}")
+            script_lines.append(f"{container_cli} manifest create{insecure_flag} {target_repo}/{base_name} {arches['arm64']} {arches['amd64']}")
+            script_lines.append(f"{container_cli} manifest push{insecure_flag} {target_repo}/{base_name}")
         else:
             # 推送单架构镜像
             single_arch = arches.get('arm64', arches.get('amd64'))
@@ -204,12 +209,12 @@ def main():
         save_images_list(tagged_images, f"images_cached-{current_time}.json")
 
         # 生成 push 脚本并保存
-        push_script = generate_push_script(tagged_images, parsed.repo, parsed.container_cli)
+        push_script = generate_push_script(tagged_images, parsed.repo, parsed.container_cli, parsed.insecure)
         with open(f"push_script-{current_time}.sh", 'w') as script_file:
             script_file.write(push_script)
         print(f"Generated push script: push_script-{current_time}.sh")
     else:
-        sync_image(image_list, parsed.repo, parsed.container_cli, parsed.multi_arch)
+        sync_image(image_list, parsed.repo, parsed.container_cli, parsed.multi_arch, parsed.insecure)
 
 if __name__ == "__main__":
     main()
