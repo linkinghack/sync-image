@@ -20,15 +20,15 @@ set -xeu
 """
 
 linux_create_manifest = """
-${container_cli} manifest rm ${private_repo}/${image_name} || echo "manifest does not exists, now create it"
-${container_cli} manifest create ${insecure_flag} ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
-${container_cli} manifest push ${insecure_flag} ${private_repo}/${image_name}
+${container_cli} manifest rm ${private_repo}/${target_image_name} || echo "manifest does not exists, now create it"
+${container_cli} manifest create ${insecure_flag} ${private_repo}/${target_image_name} ${private_repo}/${target_image_name}-arm64 ${private_repo}/${target_image_name}-amd64
+${container_cli} manifest push ${insecure_flag} ${private_repo}/${target_image_name}
 """
 
 windows_create_manifest = """
-${container_cli} manifest rm ${private_repo}/${image_name}
-${container_cli} manifest create ${insecure_flag} ${private_repo}/${image_name} ${private_repo}/${image_name}-arm64 ${private_repo}/${image_name}-amd64
-${container_cli} manifest push ${insecure_flag} ${private_repo}/${image_name}
+${container_cli} manifest rm ${private_repo}/${target_image_name}
+${container_cli} manifest create ${insecure_flag} ${private_repo}/${target_image_name} ${private_repo}/${target_image_name}-arm64 ${private_repo}/${target_image_name}-amd64
+${container_cli} manifest push ${insecure_flag} ${private_repo}/${target_image_name}
 """
 
 #  command template
@@ -36,13 +36,13 @@ ${container_cli} manifest push ${insecure_flag} ${private_repo}/${image_name}
 tmpl_immediate_sync_mutli_arch = """
 ${shell_preconfig}
 
-${container_cli} pull --platform=linux/arm64 ${image_repo}/${image_name}
-${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-arm64
-${container_cli} push ${private_repo}/${image_name}-arm64
+${container_cli} pull --platform=linux/arm64 ${image_repo}/${source_image_name}
+${container_cli} tag  ${image_repo}/${source_image_name} ${private_repo}/${target_image_name}-arm64
+${container_cli} push ${private_repo}/${target_image_name}-arm64
 
-${container_cli} pull --platform=linux/amd64 ${image_repo}/${image_name}
-${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-amd64
-${container_cli} push ${private_repo}/${image_name}-amd64
+${container_cli} pull --platform=linux/amd64 ${image_repo}/${source_image_name}
+${container_cli} tag  ${image_repo}/${source_image_name} ${private_repo}/${target_image_name}-amd64
+${container_cli} push ${private_repo}/${target_image_name}-amd64
 
 ${create_manifest}
 """
@@ -50,9 +50,9 @@ ${create_manifest}
 tmpl_immediate_sync = """
 ${shell_preconfig}
 
-${container_cli} pull  ${image_repo}/${image_name}
-${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}
-${container_cli} push ${private_repo}/${image_name}
+${container_cli} pull  ${image_repo}/${source_image_name}
+${container_cli} tag  ${image_repo}/${source_image_name} ${private_repo}/${target_image_name}
+${container_cli} push ${private_repo}/${target_image_name}
 """
 
 ## for temporarily cache image in local repo
@@ -60,18 +60,41 @@ tmpl_cache_locally = """
 MULTI_ARCH="${MULTI_ARCH}"
 TARGET_ARCH="${TARGET_ARCH}"
 if [ "$MULTI_ARCH" = "true" ]; then
-    ${container_cli} pull --platform=linux/arm64 ${image_repo}/${image_name}
-    ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-arm64
-    ${container_cli} pull --platform=linux/amd64 ${image_repo}/${image_name}
-    ${container_cli} tag  ${image_repo}/${image_name} ${private_repo}/${image_name}-amd64
+    ${container_cli} pull --platform=linux/arm64 ${image_repo}/${source_image_name}
+    ${container_cli} tag  ${image_repo}/${source_image_name} ${private_repo}/${target_image_name}-arm64
+    ${container_cli} pull --platform=linux/amd64 ${image_repo}/${source_image_name}
+    ${container_cli} tag  ${image_repo}/${source_image_name} ${private_repo}/${target_image_name}-amd64
 else
-    ${container_cli} pull --platform=$TARGET_ARCH ${image_repo}/${image_name}
-    ${container_cli} tag  ${image_repo}/${image_name}  ${private_repo}/${image_name}
+    ${container_cli} pull --platform=$TARGET_ARCH ${image_repo}/${source_image_name}
+    ${container_cli} tag  ${image_repo}/${source_image_name}  ${private_repo}/${target_image_name}
 fi
 """
 
 
-def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool, insecure: bool = False):
+def split_image_reference(img: str):
+    image_repo, separator, source_image_name = img.partition('/')
+    if not separator or not image_repo or not source_image_name:
+        raise ValueError(
+            f"Invalid image reference '{img}': expected '<registry>/<path>/<image>:<tag>'"
+        )
+    return image_repo, source_image_name
+
+
+def get_target_image_name(img: str, preserve_source_path: bool = True) -> str:
+    _, source_image_name = split_image_reference(img)
+    if preserve_source_path:
+        return source_image_name
+    return source_image_name.rsplit('/', 1)[-1]
+
+
+def sync_image(
+    img_list: List[str],
+    target_repo: str,
+    container_cli: str,
+    multi_arch: bool,
+    insecure: bool = False,
+    preserve_source_path: bool = True,
+):
     # check current OS type and set preconfig script
     shell_preconfig = bash_preconfig
     create_manifest = linux_create_manifest
@@ -88,9 +111,23 @@ def sync_image(img_list: List[str], target_repo: str, container_cli: str, multi_
             script = tmpl_immediate_sync.replace("${shell_preconfig}", shell_preconfig)
         script = script.replace("${create_manifest}", create_manifest)
         script = script.replace("${insecure_flag}", insecure_flag)
-        execute_template_script(img, script, target_repo, container_cli)
+        execute_template_script(
+            img,
+            script,
+            target_repo,
+            container_cli,
+            preserve_source_path,
+        )
 
-def cache_images_locally(img_list: List[str], target_repo: str, container_cli: str, multi_arch: bool, target_arch) -> List[str]:
+
+def cache_images_locally(
+    img_list: List[str],
+    target_repo: str,
+    container_cli: str,
+    multi_arch: bool,
+    target_arch: str,
+    preserve_source_path: bool = True,
+) -> List[str]:
     # check current OS type and set preconfig script
     shell_preconfig = bash_preconfig
     if platform.system() == "Windows" :
@@ -98,36 +135,48 @@ def cache_images_locally(img_list: List[str], target_repo: str, container_cli: s
 
     tagged_images_list = []
     for img in img_list:
-        repo_end_idx = img.find('/')
-        print('image=', img, 'repo_end_idx=', repo_end_idx)
-        image_repo = img[:repo_end_idx]
-        image_name = img[repo_end_idx+1:]
+        target_image_name = get_target_image_name(img, preserve_source_path)
         private_repo = target_repo
 
         script = ""
         if multi_arch:
             script = tmpl_cache_locally.replace("${MULTI_ARCH}", "true")
-            tagged_images_list.append(f"{private_repo}/{image_name}-arm64")
-            tagged_images_list.append(f"{private_repo}/{image_name}-amd64")
+            tagged_images_list.append(f"{private_repo}/{target_image_name}-arm64")
+            tagged_images_list.append(f"{private_repo}/{target_image_name}-amd64")
             
         else:
             script = tmpl_cache_locally.replace("${MULTI_ARCH}", "false")
-            tagged_images_list.append(f"${private_repo}/${image_name}")
+            tagged_images_list.append(f"{private_repo}/{target_image_name}")
         script = script.replace("${TARGET_ARCH}", target_arch)
-        execute_template_script(img, script, target_repo, container_cli)
+        execute_template_script(
+            img,
+            script,
+            target_repo,
+            container_cli,
+            preserve_source_path,
+        )
     return tagged_images_list
 
-def execute_template_script(img: str, script: str, target_repo: str, container_cli: str):
-    #  split repo and name
-    repo_end_idx = img.find('/')
-    print('image=', img, 'repo_end_idx=', repo_end_idx)
-    image_repo = img[:repo_end_idx]
-    image_name = img[repo_end_idx+1:]
-    print('image_name=', image_name, 'image_repo=', image_repo)
+
+def execute_template_script(
+    img: str,
+    script: str,
+    target_repo: str,
+    container_cli: str,
+    preserve_source_path: bool = True,
+):
+    image_repo, source_image_name = split_image_reference(img)
+    target_image_name = get_target_image_name(img, preserve_source_path)
+    print(
+        'source_image_name=', source_image_name,
+        'target_image_name=', target_image_name,
+        'image_repo=', image_repo,
+    )
 
     # sync multi-arch
     script = script.replace("${image_repo}", image_repo)
-    script = script.replace("${image_name}", image_name)
+    script = script.replace("${source_image_name}", source_image_name)
+    script = script.replace("${target_image_name}", target_image_name)
     script = script.replace("${private_repo}", target_repo)
     script = script.replace("${container_cli}", container_cli)
 
@@ -157,6 +206,21 @@ arg_parser.add_argument('-t', '--cache-only', default=False, type=bool, dest="ca
 arg_parser.add_argument('-a', '--target_arch', default='linux/amd64', type=str, dest="target_arch")
 arg_parser.add_argument('-k', '--insecure', default=False, action='store_true', dest="insecure",
                         help='local (target) repo uses http, add --insecure to docker manifest create/push')
+source_path_group = arg_parser.add_mutually_exclusive_group()
+source_path_group.add_argument(
+    '--preserve-source-path',
+    default=True,
+    action='store_true',
+    dest='preserve_source_path',
+    help='preserve the source path after the registry in the target image name (default)',
+)
+source_path_group.add_argument(
+    '--no-preserve-source-path',
+    '--flatten-source-path',
+    action='store_false',
+    dest='preserve_source_path',
+    help='use only the final source image name and tag in the target repository',
+)
 
 def generate_push_script(tagged_images: List[str], target_repo: str, container_cli: str, insecure: bool = False) -> str:
     script_lines = []
@@ -202,7 +266,14 @@ def main():
     print(f"image list: {image_list}")
 
     if parsed.cache_only:
-        tagged_images = cache_images_locally(image_list, parsed.repo, parsed.container_cli, parsed.multi_arch, parsed.target_arch)
+        tagged_images = cache_images_locally(
+            image_list,
+            parsed.repo,
+            parsed.container_cli,
+            parsed.multi_arch,
+            parsed.target_arch,
+            parsed.preserve_source_path,
+        )
         current_time = datetime.now()
         current_time.strftime("%y%m%d-%H%M%S")
         print(f"cached images: {tagged_images}")
@@ -214,7 +285,14 @@ def main():
             script_file.write(push_script)
         print(f"Generated push script: push_script-{current_time}.sh")
     else:
-        sync_image(image_list, parsed.repo, parsed.container_cli, parsed.multi_arch, parsed.insecure)
+        sync_image(
+            image_list,
+            parsed.repo,
+            parsed.container_cli,
+            parsed.multi_arch,
+            parsed.insecure,
+            parsed.preserve_source_path,
+        )
 
 if __name__ == "__main__":
     main()

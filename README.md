@@ -17,3 +17,26 @@ python3 sync.py -r <local_repo_host_name>:[local_repo_port]/<local_repo_sub_path
 # Optional flag
 # -l list.json
 ```
+
+By default, the source image path after the registry is preserved. For example:
+
+```text
+quay.io/calico/node:v3.31.4
+-> 10.102.32.251:1121/calico/calico/node:v3.31.4
+```
+
+Use `--no-preserve-source-path` (or `--flatten-source-path`) to keep only the
+final image name and tag:
+
+```bash
+python3 sync.py \
+  -r 10.102.32.251:1121/calico \
+  -l list.json \
+  --no-preserve-source-path
+```
+
+The resulting target image is:
+
+```text
+10.102.32.251:1121/calico/node:v3.31.4
+```
