@@ -280,10 +280,10 @@ def main():
         save_images_list(tagged_images, f"images_cached-{current_time}.json")
 
         # 生成 push 脚本并保存
-        push_script = generate_push_script(tagged_images, parsed.repo, parsed.container_cli, parsed.insecure)
-        with open(f"push_script-{current_time}.sh", 'w') as script_file:
-            script_file.write(push_script)
-        print(f"Generated push script: push_script-{current_time}.sh")
+        # push_script = generate_push_script(tagged_images, parsed.repo, parsed.container_cli, parsed.insecure)
+        # with open(f"push_script-{current_time}.sh", 'w') as script_file:
+        #     script_file.write(push_script)
+        # print(f"Generated push script: push_script-{current_time}.sh")
     else:
         sync_image(
             image_list,
